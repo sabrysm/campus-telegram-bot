@@ -1,0 +1,30 @@
+org: sphinx
+app: campus-telegram
+service: campus-q-bot
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: eu-west-3
+  	
+  iam:
+    role:
+      statements: 
+        - Effect: Allow
+          Action:
+            - dynamodb:PutItem
+            - dynamodb:GetItem
+          Resource: "arn:aws:dynamodb:eu-west-3:448969029695:table/campus_q_a_bot_messages"
+
+functions:
+  api:
+    handler: functions/webhook.handler
+    events:
+      - http:
+          path: /webhook
+          method: post
+
+
+plugins:
+  - serverless-plugin-typescript
