@@ -1,5 +1,5 @@
 import Message from "./Message";
-import ReactionType from "./ReactionType";
+import ReactionType from "../../campus-telegram-bot/interfaces/ReactionType";
 
 interface Chat {
     id: number;
