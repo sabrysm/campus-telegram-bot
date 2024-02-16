@@ -1,4 +1,5 @@
 import MessageEntity from "./MessageEntity";
+import ReplyParameters from "./ReplyParameters";
 
 interface SendMessageParameters {
   chat_id: number | string;
@@ -9,7 +10,7 @@ interface SendMessageParameters {
   // link_preview_options?: LinkPreviewOptions;
   disable_notification?: boolean;
   protect_content?: boolean;
-  // reply_parameters?: ReplyParameters;
+  reply_parameters?: ReplyParameters;
   // reply_markup?: InlineKeyboardMarkup | ReplyKeyboardMarkup | ReplyKeyboardRemove | ForceReply;
 }
 

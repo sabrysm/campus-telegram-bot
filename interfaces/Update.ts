@@ -1,4 +1,5 @@
 import Message from "./Message";
+import MessageReactionUpdated from "./MessageReactionUpdated";
 
 interface Update {
     update_id: number; // The update's unique identifier
@@ -6,7 +7,7 @@ interface Update {
     edited_message?: Message; // New version of a message that was edited
     channel_post?: Message; // New incoming channel post
     edited_channel_post?: Message; // New version of a channel post that was edited
-    // message_reaction?: MessageReactionUpdated; // A reaction to a message was changed by a user
+    message_reaction?: MessageReactionUpdated; // A reaction to a message was changed by a user
     // message_reaction_count?: MessageReactionCountUpdated; // Reactions to a message with anonymous reactions were changed
     // inline_query?: InlineQuery; // New incoming inline query
     // chosen_inline_result?: ChosenInlineResult; // The result of an inline query that was chosen by a user

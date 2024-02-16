@@ -7,6 +7,7 @@ import User from "./User";
 import Video from "./Video";
 import VideoNote from "./VideoNote";
 import Voice from "./Voice";
+import TextQuote from "./TextQuote";
 
 interface Message {
     message_id: number;
@@ -20,7 +21,7 @@ interface Message {
     is_automatic_forward?: boolean;
     reply_to_message?: Message;
     // external_reply?: ExternalReplyInfo;
-    // quote?: TextQuote;
+    quote?: TextQuote;
     via_bot?: User;
     edit_date?: number;
     has_protected_content?: boolean;

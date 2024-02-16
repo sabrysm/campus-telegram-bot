@@ -37,7 +37,7 @@ server.listen(8000, () => {
     connect({addr: "http://localhost:8000",authtoken:"1gXyFVMhNuJvrTkUFiaIjeEw1ng_7FxnvpDRccvit4JkfszDQ"})
         .then((url) => {
             axios.post("https://api.telegram.org/bot6794617842:AAHxBVBwST5maK0jPrRbYmsHaWIb8EltrbY/setWebhook",{
-                url
+                url, allowed_updates:["message_reaction","message"]
             }).then(() => {
                 console.log("done")
             })
