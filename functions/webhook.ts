@@ -425,7 +425,7 @@ const removeAcceptAnswerButton = async (message: Message) => {
     const message_type = message.text !== undefined ? "text" : message.photo !== undefined ? "photo" : message.audio !== undefined ? "audio" : message.video !== undefined ? "video" : message.voice !== undefined ? "voice" : message.document !== undefined ? "document" : "text";
     console.log("Message type of Accepted Answer: ", message_type)
     if (message_type === "text") {
-        const filtered_text = accessibleMessage.text!.replace(/_/g, "\\_").replace(/\*/g, "\\*").replace(/\[/g, "\\[").replace(/\]/g, "\\]").replace(/\(/g, "\\(").replace(/\)/g, "\\)").replace(/~/g, "\\~").replace(/`/g, "\\`").replace(/>/g, "\\>").replace(/#/g, "\\#").replace(/\+/g, "\\+").replace(/-/g, "\\-").replace(/=/g, "\\=").replace(/\|/g, "\\|").replace(/{/g, "\\{").replace(/}/g, "\\}").replace(/\./g, "\\.").replace(/!/g, "\\!");
+        const filtered_text = message.text ? accessibleMessage.text!.replace(/_/g, "\\_").replace(/\*/g, "\\*").replace(/\[/g, "\\[").replace(/\]/g, "\\]").replace(/\(/g, "\\(").replace(/\)/g, "\\)").replace(/~/g, "\\~").replace(/`/g, "\\`").replace(/>/g, "\\>").replace(/#/g, "\\#").replace(/\+/g, "\\+").replace(/-/g, "\\-").replace(/=/g, "\\=").replace(/\|/g, "\\|").replace(/{/g, "\\{").replace(/}/g, "\\}").replace(/\./g, "\\.").replace(/!/g, "\\!") : "";
         await Telegram.instance.editMessageText({
             chat_id: message.chat.id,
             message_id: message.message_id,
@@ -433,10 +433,12 @@ const removeAcceptAnswerButton = async (message: Message) => {
             parse_mode: "MarkdownV2"
         })
     } else {
+        const msg_caption = message.caption ? accessibleMessage.caption!.replace(/_/g, "\\_").replace(/\*/g, "\\*").replace(/\[/g, "\\[").replace(/\]/g, "\\]").replace(/\(/g, "\\(").replace(/\)/g, "\\)").replace(/~/g, "\\~").replace(/`/g, "\\`").replace(/>/g, "\\>").replace(/#/g, "\\#").replace(/\+/g, "\\+").replace(/-/g, "\\-").replace(/=/g, "\\=").replace(/\|/g, "\\|").replace(/{/g, "\\{").replace(/}/g, "\\}").replace(/\./g, "\\.").replace(/!/g, "\\!") : "";
+
         await Telegram.instance.editMessageCaption({
             chat_id: message.chat.id,
             message_id: message.message_id,
-            caption: "\n\n*Accepted Answer* ✅",
+            caption: msg_caption + "\n\n*Accepted Answer* ✅",
             parse_mode: "MarkdownV2"
         })
     
