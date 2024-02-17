@@ -9,7 +9,9 @@ import SendDocument from "../interfaces/SendDocument";
 import SendPhoto from "../interfaces/SendPhoto";
 import SendVideo from "../interfaces/SendVideo";
 import SendVoice from "../interfaces/SendVoice";
-
+import CopyMessage from "../interfaces/copyMessage";
+import EditMessageText from "../interfaces/editMessageText";
+import EditMessageReplyMarkup from "../interfaces/editMessageReplyMarkup";
 
 class Telegram{
     static readonly instance = new Telegram()
@@ -85,6 +87,28 @@ class Telegram{
     async sendVoice(body: SendVoice){
         await axiosInstance({
             url: "/sendVoice",
+            data: body
+        })
+    }
+
+    async copyMessage(body: CopyMessage){
+        const response = await axiosInstance({
+            url: "/copyMessage",
+            data: body
+        })
+        return response.data
+    }
+
+    async editMessageText(body: EditMessageText){
+        await axiosInstance({
+            url: "/editMessageText",
+            data: body
+        })
+    }
+
+    async editMessageReplyMarkup(body: EditMessageReplyMarkup){
+        await axiosInstance({
+            url: "/editMessageReplyMarkup",
             data: body
         })
     }

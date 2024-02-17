@@ -9,10 +9,7 @@ import { DynamoDBDocumentClient, PutCommand, GetCommand } from "@aws-sdk/lib-dyn
 import generateId from "../libs/genrateId";
 import SendMessageParameters from "../interfaces/SendMessageParameters";
 import { text } from "body-parser";
-import InlineKeyboardButton from "../interfaces/InlineKeyboardButton";
-import InlineKeyboardMarkup from "../interfaces/InlineKeyboardMarkup";
-import ForceReply from "../interfaces/ForceReply";
-import CopyMessage from "../interfaces/copyMessage";
+
 
 const client = new DynamoDBClient({
     region: "eu-west-3",
@@ -65,7 +62,7 @@ const askQuestionHandler = async (message: Message) => {
         await Telegram.instance.sendPhoto({
             chat_id: GROUP_ID,
             photo: message.photo![0].file_id,
-            caption: message.caption + "\n\n#AnonQuestion"
+            caption: message.caption
         })
     } else if (message_type === "audio") {
         const putCommand = new PutCommand({
@@ -84,7 +81,7 @@ const askQuestionHandler = async (message: Message) => {
         await Telegram.instance.sendAudio({
             chat_id: GROUP_ID,
             audio: message.audio!.file_id,
-            caption: message.caption + "\n\n#AnonQuestion"
+            caption: message.caption
         })
     } else if (message_type === "video") {
         const putCommand = new PutCommand({
@@ -103,7 +100,7 @@ const askQuestionHandler = async (message: Message) => {
         await Telegram.instance.sendVideo({
             chat_id: GROUP_ID,
             video: message.video!.file_id,
-            caption: message.caption + "\n\n#AnonQuestion"
+            caption: message.caption
         })
     }
     else if (message_type === "document") {
@@ -123,7 +120,7 @@ const askQuestionHandler = async (message: Message) => {
         await Telegram.instance.sendDocument({
             chat_id: GROUP_ID,
             document: message.document!.file_id,
-            caption: message.caption + "\n\n#AnonQuestion"
+            caption: message.caption
         })
     } else if (message_type === "voice") {
         const putCommand = new PutCommand({
@@ -142,7 +139,7 @@ const askQuestionHandler = async (message: Message) => {
         await Telegram.instance.sendVoice({
             chat_id: GROUP_ID,
             voice: message.voice!.file_id,
-            caption: message.caption + "\n\n#AnonQuestion"
+            caption: message.caption
         })
     } else {
         console.log("Message type not supported")
@@ -150,7 +147,7 @@ const askQuestionHandler = async (message: Message) => {
             chat_id: message.chat.id,
             text: "Message type not supported"
         })
-    }
+    } 
 }
 
 
@@ -178,25 +175,14 @@ const answerQuestionHandler = async (message: Message) => {
     const { Item } = await docClient.send(getCommand)
 
     const question_type = Item?.message_type;
-    const accept_button: InlineKeyboardButton = {
-        text: "Accept Answer ✅",
-        callback_data: "accept"
-    }
-    const keyboard: InlineKeyboardMarkup = {inline_keyboard: [[accept_button]]}
-    
-    const copied_msg = await Telegram.instance.copyMessage({
+
+    const original_msg = await Telegram.instance.forwardMessage({
         chat_id: (message.from!.id).toString(), // Replace it later with Item.from
         from_chat_id: GROUP_ID,
-        message_id: message.message_id,
-        reply_markup: keyboard,
+        message_id: message.message_id
     })
-    
-    
     let message_type = message.text !== undefined ? "text" : message.photo !== undefined ? "photo" : message.audio !== undefined ? "audio" : message.video !== undefined ? "video" : message.voice !== undefined ? "voice" : message.document !== undefined ? "document" : "text";
-    console.log("Answer ID: ", message.message_id)
     console.log("Answer type: ", message_type)
-
-    console.log("Forwarded message ID: ", copied_msg.result.message_id)
 
 
     if (message_type === "text") {
@@ -298,21 +284,22 @@ const answerQuestionHandler = async (message: Message) => {
 
 
 const setReactionHandler = async (message_id: number) => {
-    const reaction: ReactionType = {
+
+    const reactionValue: ReactionType = {
         type: "emoji",
         emoji: "👍"
-    }
+    };
 
     await Telegram.instance.setMessageReaction({
         chat_id: GROUP_ID,
         message_id: message_id,
-        reaction: [reaction],
+        reaction: [reactionValue],
         is_big: false
     });
 }
 
 
-const AcceptAnswer = async (message_id: number) => {
+const reactionHandler = async (message_id: number, dm_chat_id: number) => {
 
     const getCommand = new GetCommand({
         TableName: DYNAMO_DB_TABLE_NAME,
@@ -324,144 +311,182 @@ const AcceptAnswer = async (message_id: number) => {
 
     const { Item } = await docClient.send(getCommand)
 
+    const getCommand2 = new GetCommand({
+        TableName: DYNAMO_DB_TABLE_NAME,
+        Key: {
+            id: Item?.question_id.toString(),
+            type: "question"
+        }
+    })
+
+    const Item2 = await docClient.send(getCommand2)
+
+    console.log("Answer ID: ", message_id - 1, "\nQuestion ID: ", Item?.question_id)
+
+    console.log("Item2 from Reaction Handler: ", Item2)
 
     const answer_type = Item?.message_type;
+    const question_type = Item2.Item?.message_type;
 
     console.log("Message type from Reaction Handler: ", answer_type)
 
-    await Telegram.instance.sendMessage({
-        chat_id: GROUP_ID,
-        text: `*Accepted Answer* ✅`,
-        reply_parameters: {
-            message_id: message_id - 1,
-            chat_id: GROUP_ID
-        },
-        parse_mode: "MarkdownV2"
-    })
-
-    await setReactionHandler(message_id - 1)
-}
-
-const replyToGroupAnswer = async (message: Message, new_question: Message) => {
-    const message_type = new_question.text !== undefined ? "text" : new_question.photo !== undefined ? "photo" : new_question.audio !== undefined ? "audio" : new_question.video !== undefined ? "video" : new_question.voice !== undefined ? "voice" : new_question.document !== undefined ? "document" : "text";
-
-    console.log("Reply to group answer message type: ", message_type)
-
-    if (message_type === "text") {
+    if (answer_type === "text" &&  question_type === "text") {
         await Telegram.instance.sendMessage({
             chat_id: GROUP_ID,
-            text: new_question.text ? new_question.text + "\n\n#AnonQuestion" : "",
+            text: `*Accepted Answer* ✅\n\n*Original Question:*\n${Item?.question_text}`,
             reply_parameters: {
-                message_id: message.message_id - 1,
+                message_id: message_id - 1,
                 chat_id: GROUP_ID
-            }
+            },
+            parse_mode: "MarkdownV2"
         })
-    } else if (message_type === "photo") {
+    } else if (answer_type === "text" && question_type === "photo") {
         await Telegram.instance.sendPhoto({
             chat_id: GROUP_ID,
-            photo: new_question.photo![0].file_id,
-            caption: new_question.caption + "\n\n#AnonQuestion",
+            photo: Item2?.Item?.photo,
+            caption: `*Accepted Answer* ✅\n\n*Original Question:*\n${Item2?.Item?.caption}`,
             reply_parameters: {
-                message_id: message.message_id - 1,
+                message_id: message_id - 1,
                 chat_id: GROUP_ID
-            }
+            },
+            parse_mode: "MarkdownV2"
         })
-    } else if (message_type === "audio") {
+    } else if (answer_type === "text" && question_type === "audio") {
         await Telegram.instance.sendAudio({
             chat_id: GROUP_ID,
-            audio: new_question.audio!.file_id,
-            caption: new_question.caption + "\n\n#AnonQuestion",
+            audio: Item2?.Item?.audio!,
+            caption: `*Accepted Answer* ✅`,
             reply_parameters: {
-                message_id: message.message_id - 1,
+                message_id: message_id - 1,
                 chat_id: GROUP_ID
-            }
+            },
+            parse_mode: "MarkdownV2"
         })
-    } else if (message_type === "video") {
+    } else if (answer_type === "text" && question_type === "video") {
         await Telegram.instance.sendVideo({
             chat_id: GROUP_ID,
-            video: new_question.video!.file_id,
-            caption: new_question.caption + "\n\n#AnonQuestion",
+            video: Item2?.Item?.video!,
+            caption: `*Accepted Answer* ✅\n\n*Original Question:*\n${Item2?.Item?.caption}`,
             reply_parameters: {
-                message_id: message.message_id - 1,
+                message_id: message_id - 1,
                 chat_id: GROUP_ID
-            }
+            },
+            parse_mode: "MarkdownV2"
         })
-    } else if (message_type === "document") {
+    } else if (answer_type === "text" && question_type === "document") {
         await Telegram.instance.sendDocument({
             chat_id: GROUP_ID,
-            document: new_question.document!.file_id,
-            caption: new_question.caption + "\n\n#AnonQuestion",
+            document: Item2?.Item?.document!,
+            caption: `*Accepted Answer* ✅\n\n*Original Question:*\n${Item2?.Item?.caption}`,
             reply_parameters: {
-                message_id: message.message_id - 1,
+                message_id: message_id - 1,
                 chat_id: GROUP_ID
-            }
+            },
+            parse_mode: "MarkdownV2"
         })
-    } else if (message_type === "voice") {
+    } else if (answer_type === "text" && question_type === "voice") {
         await Telegram.instance.sendVoice({
             chat_id: GROUP_ID,
-            voice: new_question.voice!.file_id,
-            caption: new_question.caption + "\n\n#AnonQuestion",
+            voice: Item2?.Item?.voice!,
+            caption: `*Accepted Answer* ✅`,
             reply_parameters: {
-                message_id: message.message_id - 1,
+                message_id: message_id - 1,
                 chat_id: GROUP_ID
-            }
+            },
+            parse_mode: "MarkdownV2"
+        })
+    }
+    else if (answer_type === "photo") {
+        await Telegram.instance.sendPhoto({
+            chat_id: GROUP_ID,
+            photo: Item?.photo,
+            caption: `*Accepted Answer* ✅\n\n*Original Question:*\n${Item?.question_text}`,
+            reply_parameters: {
+                message_id: message_id - 1,
+                chat_id: GROUP_ID
+            },
+            parse_mode: "MarkdownV2"
+        })
+    } else if (answer_type === "audio") {
+        await Telegram.instance.sendAudio({
+            chat_id: GROUP_ID,
+            audio: Item?.audio!,
+            caption: `*Accepted Answer* ✅`,
+            reply_parameters: {
+                message_id: message_id - 1,
+                chat_id: GROUP_ID
+            },
+            parse_mode: "MarkdownV2"
+        })
+    } else if (answer_type === "video") {
+        await Telegram.instance.sendVideo({
+            chat_id: GROUP_ID,
+            video: Item?.video!,
+            caption: `*Accepted Answer* ✅`,
+            reply_parameters: {
+                message_id: message_id - 1,
+                chat_id: GROUP_ID
+            },
+            parse_mode: "MarkdownV2"
+        })
+    } else if (answer_type === "document") {
+        await Telegram.instance.sendDocument({
+            chat_id: GROUP_ID,
+            document: Item?.document!,
+            caption: `*Accepted Answer* ✅\n\n*Original Question:*\n${Item?.question_text}`,
+            reply_parameters: {
+                message_id: message_id - 1,
+                chat_id: GROUP_ID
+            },
+            parse_mode: "MarkdownV2"
+        })
+    } else if (answer_type === "voice") {
+        await Telegram.instance.sendVoice({
+            chat_id: GROUP_ID,
+            voice: Item?.voice!,
+            caption: `*Accepted Answer* ✅`,
+            reply_parameters: {
+                message_id: message_id - 1,
+                chat_id: GROUP_ID
+            },
+            parse_mode: "MarkdownV2"
         })
     } else {
         console.log("Message type not supported")
         await Telegram.instance.sendMessage({
-            chat_id: new_question.chat.id,
+            chat_id: dm_chat_id,
             text: "Message type not supported"
         })
     }
-}
 
+    await setReactionHandler(message_id - 1)
+}
 
 export const handler: Handler = async (event) => {
 
     try {
         const update = JSON.parse(event.body) as Update
         const { message } = update
-        // on start of the bot
-        if (message !== undefined && message.text === "/start") {
-            await Telegram.instance.sendMessage({
-                chat_id: message.chat.id,
-                text: "*Welcome to the ECE 25 Telegram Bot*\\!\n\nThis bot is all about asking questions *anonymously*\\.\nGot a question\\? Just shoot a message to this bot\\.\nWanna help someone out\\?\nReply to their question with your answer\\.\n*It's super easy*\\!\n\n*Just a heads\\-up:*\n• This bot hangs out exclusively in the Campus group chat\\.\n• Creators of the bot won't see who sent the Question\\, so you can ask with a relief\\.\n• If you got 3 warnings from the bot, you will get banned\\!\n\n*Happy chatting and enjoy using the bot*\\!",
-                parse_mode: "MarkdownV2"
-            })
+
+        if (message !== undefined) {
+            if (message.chat.id === GROUP_ID) {
+                await answerQuestionHandler(message);
+            }
+            else {
+                await askQuestionHandler(message)
+            }
         }
-        // check for callback query
-        else if (update.callback_query !== undefined) {
-            if (update.callback_query.data === "accept") {
-                await AcceptAnswer(update.callback_query.message!.message_id)
-                const accessibleMessage = update.callback_query.message as Message
-                /**
-                 * In all other places characters '_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!' must be escaped with the preceding character '\'.
-                 * place \\ in front of them to escape it in a filtered string
-                 */
-                const filtered_text = accessibleMessage.text!.replace(/_/g, "\\_").replace(/\*/g, "\\*").replace(/\[/g, "\\[").replace(/\]/g, "\\]").replace(/\(/g, "\\(").replace(/\)/g, "\\)").replace(/~/g, "\\~").replace(/`/g, "\\`").replace(/>/g, "\\>").replace(/#/g, "\\#").replace(/\+/g, "\\+").replace(/-/g, "\\-").replace(/=/g, "\\=").replace(/\|/g, "\\|").replace(/{/g, "\\{").replace(/}/g, "\\}").replace(/\./g, "\\.").replace(/!/g, "\\!");
-                await Telegram.instance.editMessageText({
-                    chat_id: update.callback_query.message!.chat.id,
-                    message_id: update.callback_query.message!.message_id,
-                    text: filtered_text + "\n\n*Accepted Answer* ✅",
-                    parse_mode: "MarkdownV2"
-                })
+        else if (update.message_reaction !== undefined) {
+            const reactionValue: ReactionType = {
+                type: "emoji",
+                emoji: "👍"
+            };
+
+            if (update.message_reaction.chat.id !== GROUP_ID && JSON.stringify(update.message_reaction.new_reaction[0]) === JSON.stringify(reactionValue)) {
+                // Get the message ID from the database that has the same text as the message reacted to
+                await reactionHandler(update.message_reaction.message_id, update.message_reaction.chat.id)
             }
-        } // if the message in private chat was replied to
-        else if (message !== undefined && message.reply_to_message !== undefined && message.chat.id !== GROUP_ID) {
-            if (message.chat.id !== GROUP_ID) {
-                await replyToGroupAnswer(message.reply_to_message!, message)
-            }
-        } // if the message was sent in the group chat
-        else {
-            if (message !== undefined) {
-                if (message.chat.id === GROUP_ID && message.reply_to_message !== undefined && message.reply_to_message.from!.id !== message.from!.id && message.reply_to_message.text !== undefined && (message.reply_to_message.text.includes("#AnonQuestion") || (message.reply_to_message.caption !== undefined ? message.reply_to_message.caption.includes("#AnonQuestion") : false))) {
-                    // && message.reply_to_message.from!.id !== message.from!.id 
-                    await answerQuestionHandler(message);
-                }
-                else if (message.chat.id !== GROUP_ID) {
-                    await askQuestionHandler(message)
-                }
-            }
+
         }
 
     } catch (error) {

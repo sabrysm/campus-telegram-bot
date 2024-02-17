@@ -1,5 +1,7 @@
 import MessageEntity from "./MessageEntity";
 import ReplyParameters from "./ReplyParameters";
+import ForceReply from "./ForceReply";
+import InlineKeyboardMarkup from "./InlineKeyboardMarkup";
 
 interface SendMessageParameters {
   chat_id: number | string;
@@ -11,7 +13,7 @@ interface SendMessageParameters {
   disable_notification?: boolean;
   protect_content?: boolean;
   reply_parameters?: ReplyParameters;
-  // reply_markup?: InlineKeyboardMarkup | ReplyKeyboardMarkup | ReplyKeyboardRemove | ForceReply;
+  reply_markup?: InlineKeyboardMarkup | ForceReply;
 }
 
-export default SendMessageParameters
+export default SendMessageParameters;

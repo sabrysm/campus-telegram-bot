@@ -1,5 +1,6 @@
 import Message from "./Message";
 import MessageReactionUpdated from "./MessageReactionUpdated";
+import CallbackQuery from "./CallbackQuery";
 
 interface Update {
     update_id: number; // The update's unique identifier
@@ -11,7 +12,7 @@ interface Update {
     // message_reaction_count?: MessageReactionCountUpdated; // Reactions to a message with anonymous reactions were changed
     // inline_query?: InlineQuery; // New incoming inline query
     // chosen_inline_result?: ChosenInlineResult; // The result of an inline query that was chosen by a user
-    // callback_query?: CallbackQuery; // New incoming callback query
+    callback_query?: CallbackQuery; // New incoming callback query
     // shipping_query?: ShippingQuery; // New incoming shipping query
     // pre_checkout_query?: PreCheckoutQuery; // New incoming pre-checkout query
     // poll?: Poll; // New poll state
