@@ -182,16 +182,16 @@ const answerQuestionHandler = async (message: Message) => {
         text: "Accept Answer ✅",
         callback_data: "accept"
     }
-    const keyboard: InlineKeyboardMarkup = {inline_keyboard: [[accept_button]]}
-    
+    const keyboard: InlineKeyboardMarkup = { inline_keyboard: [[accept_button]] }
+
     const copied_msg = await Telegram.instance.copyMessage({
         chat_id: (message.from!.id).toString(), // Replace it later with Item.from
         from_chat_id: GROUP_ID,
         message_id: message.message_id,
         reply_markup: keyboard,
     })
-    
-    
+
+
     let message_type = message.text !== undefined ? "text" : message.photo !== undefined ? "photo" : message.audio !== undefined ? "audio" : message.video !== undefined ? "video" : message.voice !== undefined ? "voice" : message.document !== undefined ? "document" : "text";
     console.log("Answer ID: ", message.message_id)
     console.log("Answer type: ", message_type)
@@ -370,7 +370,7 @@ const replyToGroupAnswer = async (message: Message, new_question: Message) => {
         await Telegram.instance.sendAudio({
             chat_id: GROUP_ID,
             audio: new_question.audio!.file_id,
-            caption: new_question.caption + "\n\n#AnonQuestion",
+            caption: "#AnonQuestion",
             reply_parameters: {
                 message_id: message.message_id - 1,
                 chat_id: GROUP_ID
@@ -380,7 +380,7 @@ const replyToGroupAnswer = async (message: Message, new_question: Message) => {
         await Telegram.instance.sendVideo({
             chat_id: GROUP_ID,
             video: new_question.video!.file_id,
-            caption: new_question.caption + "\n\n#AnonQuestion",
+            caption: "#AnonQuestion",
             reply_parameters: {
                 message_id: message.message_id - 1,
                 chat_id: GROUP_ID
@@ -390,7 +390,7 @@ const replyToGroupAnswer = async (message: Message, new_question: Message) => {
         await Telegram.instance.sendDocument({
             chat_id: GROUP_ID,
             document: new_question.document!.file_id,
-            caption: new_question.caption + "\n\n#AnonQuestion",
+            caption: "#AnonQuestion",
             reply_parameters: {
                 message_id: message.message_id - 1,
                 chat_id: GROUP_ID
@@ -400,7 +400,7 @@ const replyToGroupAnswer = async (message: Message, new_question: Message) => {
         await Telegram.instance.sendVoice({
             chat_id: GROUP_ID,
             voice: new_question.voice!.file_id,
-            caption: new_question.caption + "\n\n#AnonQuestion",
+            caption: "#AnonQuestion",
             reply_parameters: {
                 message_id: message.message_id - 1,
                 chat_id: GROUP_ID
@@ -415,6 +415,34 @@ const replyToGroupAnswer = async (message: Message, new_question: Message) => {
     }
 }
 
+const removeAcceptAnswerButton = async (message: Message) => {
+    const accessibleMessage = message as Message
+    /**
+     * In all other places characters '_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!' must be escaped with the preceding character '\'.
+     * place \\ in front of them to escape it in a filtered string
+     */
+    
+    const message_type = message.text !== undefined ? "text" : message.photo !== undefined ? "photo" : message.audio !== undefined ? "audio" : message.video !== undefined ? "video" : message.voice !== undefined ? "voice" : message.document !== undefined ? "document" : "text";
+    console.log("Message type of Accepted Answer: ", message_type)
+    if (message_type === "text") {
+        const filtered_text = accessibleMessage.text!.replace(/_/g, "\\_").replace(/\*/g, "\\*").replace(/\[/g, "\\[").replace(/\]/g, "\\]").replace(/\(/g, "\\(").replace(/\)/g, "\\)").replace(/~/g, "\\~").replace(/`/g, "\\`").replace(/>/g, "\\>").replace(/#/g, "\\#").replace(/\+/g, "\\+").replace(/-/g, "\\-").replace(/=/g, "\\=").replace(/\|/g, "\\|").replace(/{/g, "\\{").replace(/}/g, "\\}").replace(/\./g, "\\.").replace(/!/g, "\\!");
+        await Telegram.instance.editMessageText({
+            chat_id: message.chat.id,
+            message_id: message.message_id,
+            text: filtered_text + "\n\n*Accepted Answer* ✅",
+            parse_mode: "MarkdownV2"
+        })
+    } else {
+        await Telegram.instance.editMessageCaption({
+            chat_id: message.chat.id,
+            message_id: message.message_id,
+            caption: "\n\n*Accepted Answer* ✅",
+            parse_mode: "MarkdownV2"
+        })
+    
+    }
+}
+
 
 export const handler: Handler = async (event) => {
 
@@ -425,7 +453,7 @@ export const handler: Handler = async (event) => {
         if (message !== undefined && message.text === "/start") {
             await Telegram.instance.sendMessage({
                 chat_id: message.chat.id,
-                text: "*Welcome to the ECE 25 Telegram Bot*\\!\n\nThis bot is all about asking questions *anonymously*\\.\nGot a question\\? Just shoot a message to this bot\\.\nWanna help someone out\\?\nReply to their question with your answer\\.\n*It's super easy*\\!\n\n*Just a heads\\-up:*\n• This bot hangs out exclusively in the Campus group chat\\.\n• Creators of the bot won't see who sent the Question\\, so you can ask with a relief\\.\n• If you got 3 warnings from the bot, you will get banned\\!\n\n*Happy chatting and enjoy using the bot*\\!",
+                text: "*Welcome to the ECE 25 Telegram Bot*\\!\n\nThis bot is all about asking questions *anonymously*\\.\nGot a question\\? Just shoot a message to this bot\\.\nWanna help someone out\\?\nReply to their question with your answer\\.\n*It's super easy*\\!\n\n*Just a heads\\-up:*\n• This bot hangs out exclusively in the Campus group chat\\.\n• The creators won't know who sent the question\\, so feel free to ask without any concerns\\.\n• If you got 3 warnings from the bot, you will get banned\\!\n\n*Happy chatting and enjoy using the bot*\\!",
                 parse_mode: "MarkdownV2"
             })
         }
@@ -433,18 +461,8 @@ export const handler: Handler = async (event) => {
         else if (update.callback_query !== undefined) {
             if (update.callback_query.data === "accept") {
                 await AcceptAnswer(update.callback_query.message!.message_id)
-                const accessibleMessage = update.callback_query.message as Message
-                /**
-                 * In all other places characters '_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!' must be escaped with the preceding character '\'.
-                 * place \\ in front of them to escape it in a filtered string
-                 */
-                const filtered_text = accessibleMessage.text!.replace(/_/g, "\\_").replace(/\*/g, "\\*").replace(/\[/g, "\\[").replace(/\]/g, "\\]").replace(/\(/g, "\\(").replace(/\)/g, "\\)").replace(/~/g, "\\~").replace(/`/g, "\\`").replace(/>/g, "\\>").replace(/#/g, "\\#").replace(/\+/g, "\\+").replace(/-/g, "\\-").replace(/=/g, "\\=").replace(/\|/g, "\\|").replace(/{/g, "\\{").replace(/}/g, "\\}").replace(/\./g, "\\.").replace(/!/g, "\\!");
-                await Telegram.instance.editMessageText({
-                    chat_id: update.callback_query.message!.chat.id,
-                    message_id: update.callback_query.message!.message_id,
-                    text: filtered_text + "\n\n*Accepted Answer* ✅",
-                    parse_mode: "MarkdownV2"
-                })
+                await removeAcceptAnswerButton(update.callback_query.message!)
+
             }
         } // if the message in private chat was replied to
         else if (message !== undefined && message.reply_to_message !== undefined && message.chat.id !== GROUP_ID) {

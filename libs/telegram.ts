@@ -12,6 +12,7 @@ import SendVoice from "../interfaces/SendVoice";
 import CopyMessage from "../interfaces/copyMessage";
 import EditMessageText from "../interfaces/editMessageText";
 import EditMessageReplyMarkup from "../interfaces/editMessageReplyMarkup";
+import EditMessageCaption from "../interfaces/EditMessageCaption";
 
 class Telegram{
     static readonly instance = new Telegram()
@@ -109,6 +110,13 @@ class Telegram{
     async editMessageReplyMarkup(body: EditMessageReplyMarkup){
         await axiosInstance({
             url: "/editMessageReplyMarkup",
+            data: body
+        })
+    }
+
+    async editMessageCaption(body: EditMessageCaption){
+        await axiosInstance({
+            url: "/editMessageCaption",
             data: body
         })
     }
