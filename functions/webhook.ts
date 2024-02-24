@@ -244,6 +244,7 @@ const answerQuestionHandler = async (message: Message) => {
             }
         })
         await docClient.send(putCommand);
+
     } else if (message_type === "video") {
         const putCommand = new PutCommand({
             TableName: DYNAMO_DB_TABLE_NAME,
@@ -451,8 +452,10 @@ export const handler: Handler = async (event) => {
     try {
         const update = JSON.parse(event.body) as Update
         const { message } = update
+        console.log("Update: ", update)
         // on start of the bot
         if (message !== undefined && message.text === "/start") {
+            console.log("Start of the bot")
             await Telegram.instance.sendMessage({
                 chat_id: message.chat.id,
                 text: "*Welcome to the ECE 25 Telegram Bot*\\!\n\nThis bot is all about asking questions *anonymously*\\.\nGot a question\\? Just shoot a message to this bot\\.\nWanna help someone out\\?\nReply to their question with your answer\\.\n*It's super easy*\\!\n\n*Just a heads\\-up:*\n• This bot hangs out exclusively in the Campus group chat\\.\n• The creators won't know who sent the question\\, so feel free to ask without any concerns\\.\n• If you got 3 warnings from the bot, you will get banned\\!\n\n*Happy chatting and enjoy using the bot*\\!",
@@ -462,24 +465,29 @@ export const handler: Handler = async (event) => {
         // check for callback query
         else if (update.callback_query !== undefined) {
             if (update.callback_query.data === "accept") {
+                console.log("Accepting answer")
                 await AcceptAnswer(update.callback_query.message!.message_id)
                 await removeAcceptAnswerButton(update.callback_query.message!)
 
             }
         } // if the message in private chat was replied to
         else if (message !== undefined && message.reply_to_message !== undefined && message.chat.id !== GROUP_ID) {
-            if (message.chat.id !== GROUP_ID) {
-                await replyToGroupAnswer(message.reply_to_message!, message)
-            }
+            console.log("Reply in private chat")
+            await replyToGroupAnswer(message.reply_to_message!, message)
         } // if the message was sent in the group chat
         else {
             if (message !== undefined) {
-                if (message.chat.id === GROUP_ID && message.reply_to_message !== undefined && message.reply_to_message.from!.id !== message.from!.id && message.reply_to_message.text !== undefined && (message.reply_to_message.text.includes("#AnonQuestion") || (message.reply_to_message.caption !== undefined ? message.reply_to_message.caption.includes("#AnonQuestion") : false))) {
+                if (message.chat.id === GROUP_ID && message.reply_to_message !== undefined && (message.reply_to_message.text !== undefined && message.reply_to_message.text.includes("#AnonQuestion") || message.reply_to_message.caption !== undefined && message.reply_to_message.caption.includes("#AnonQuestion"))) {
                     // && message.reply_to_message.from!.id !== message.from!.id 
+                    console.log("Answering question")
                     await answerQuestionHandler(message);
                 }
                 else if (message.chat.id !== GROUP_ID) {
+                    console.log("Asking question")
                     await askQuestionHandler(message)
+                }
+                else {
+                    console.log("Something is wrong with the message")
                 }
             }
         }
